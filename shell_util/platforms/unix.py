@@ -1,8 +1,8 @@
+from shell_util.platforms.constants import UnixConstants
 from shell_util.shell_conn import ShellConnection
-from testconstants import MAC_CB_PATH, VERSION_FILE, CB_RELEASE_BUILDS
 
 
-class Unix(ShellConnection):
+class Unix(ShellConnection, UnixConstants):
     def __init__(self, test_server, info=None):
         super(Unix, self).__init__(test_server)
         self.nonroot = False
@@ -15,12 +15,13 @@ class Unix(ShellConnection):
     def get_cbversion(self):
         """ fv = a.b.c-xxxx, sv = a.b.c, bn = xxxx """
         fv = sv = bn = ""
-        if self.file_exists(MAC_CB_PATH, VERSION_FILE):
-            output = self.read_remote_file(MAC_CB_PATH, VERSION_FILE)
+        if self.file_exists(self.cb_path, self.version_file):
+            output = self.read_remote_file(self.cb_path, self.version_file)
             if output:
                 for x in output:
                     x = x.strip()
-                    if x and x[:5] in CB_RELEASE_BUILDS.keys() and "-" in x:
+                    if x and x[:5] in self.cb_release_builds.keys() \
+                            and "-" in x:
                         fv = x
                         tmp = x.split("-")
                         sv = tmp[0]
@@ -31,8 +32,8 @@ class Unix(ShellConnection):
         return fv, sv, bn
 
     def is_couchbase_installed(self):
-        output, error = self.execute_command('ls %s%s' % (MAC_CB_PATH,
-                                                          VERSION_FILE))
+        output, error = self.execute_command('ls %s%s' % (self.cb_path,
+                                                          self.version_file))
         self.log_command_output(output, error)
         for line in output:
             if line.find('No such file or directory') == -1:
@@ -125,8 +126,8 @@ class Unix(ShellConnection):
         raise NotImplementedError
 
     def start_couchbase(self):
-        running = self.is_couchbase_running()
         retry = 0
+        running = self.is_couchbase_running()
         while not running and retry < 3:
             self.log.info("Starting couchbase server")
             o, r = self.execute_command("open /Applications/Couchbase\ Server.app")
@@ -134,11 +135,14 @@ class Unix(ShellConnection):
             running = self.is_couchbase_running()
             retry = retry + 1
         if not running and retry >= 3:
-            sys.exit("%s - Server not started even after 3 retries" % self.info.ip)
+            self.log.critical("%s - Server not started even after 3 retries" % self.info.ip)
+            return False
+        return True
 
     def stop_couchbase(self, num_retries=5, poll_interval=10):
         cb_process = '/Applications/Couchbase\ Server.app/Contents/MacOS/Couchbase\ Server'
-        cmd = "ps aux | grep {0} | awk '{{print $2}}' | xargs kill -9 ".format(cb_process)
+        cmd = "ps aux | grep {0} | awk '{{print $2}}' | xargs kill -9 "\
+            .format(cb_process)
         o, r = self.execute_command(cmd)
         self.log_command_output(o, r)
         o, r = self.execute_command("killall -9 epmd")

@@ -1,7 +1,5 @@
 from shell_util.remote_machine import RemoteMachineProcess
 from shell_util.shell_conn import ShellConnection
-from testconstants import WIN_CB_PATH, VERSION_FILE, WIN_CB_PATH_PARA, \
-    CB_RELEASE_BUILDS
 
 
 class Windows(ShellConnection):

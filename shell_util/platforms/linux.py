@@ -1,15 +1,11 @@
+from shell_util.platforms.constants import LinuxConstants
 from shell_util.shell_conn import ShellConnection
 
 
-class Linux(ShellConnection):
+class Linux(ShellConnection, LinuxConstants):
     def __init__(self, test_server, info=None):
         super(Linux, self).__init__(test_server)
-        self.cmd_ext = ""
         self.info = info
-        self.cb_path = "/opt/couchbase/"
-        self.cb_sample_path = "/opt/couchbase/samples/"
-
-        self.root_path = "/root/"
 
     def get_mem_usage_by_process(self, process_name):
         output, error = self.execute_command(
@@ -25,14 +21,14 @@ class Linux(ShellConnection):
         fv = sv = bn = tmp = ""
         err_msg = "{} - Couchbase Server not found".format(self.ip)
         if self.nonroot:
-            if self.file_exists('/home/%s/cb/%s' % (self.username, LINUX_CB_PATH), VERSION_FILE):
-                output = self.read_remote_file('/home/%s/cb/%s' % (self.username, LINUX_CB_PATH),
-                                               VERSION_FILE)
+            if self.file_exists('/home/%s/cb/%s' % (self.username, self.cb_path), self.version_file):
+                output = self.read_remote_file('/home/%s/cb/%s' % (self.username, self.cb_path),
+                                               self.version_file)
             else:
                 log.info(err_msg)
         else:
-            if self.file_exists(LINUX_CB_PATH, VERSION_FILE):
-                output = self.read_remote_file(LINUX_CB_PATH, VERSION_FILE)
+            if self.file_exists(self.cb_path, self.version_file):
+                output = self.read_remote_file(self.cb_path, self.version_file)
             else:
                 log.info(err_msg)
         if output:
@@ -54,14 +50,14 @@ class Linux(ShellConnection):
                     log.info("Couchbase Server was installed in non default path %s"
                              % output[0])
                     self.nr_home_path = output[0]
-            file_path = self.nr_home_path + LINUX_CB_PATH
-            if self.file_exists(file_path, VERSION_FILE):
+            file_path = self.nr_home_path + self.cb_path
+            if self.file_exists(file_path, self.version_file):
                 log.info("non root couchbase installed at %s " % self.ip)
                 return True
         else:
-            if self.file_exists(LINUX_CB_PATH, VERSION_FILE):
-                log.info("{0} **** The linux version file {1} {2}  exists".format(self.ip,
-                                                                                  LINUX_CB_PATH, VERSION_FILE ))
+            if self.file_exists(self.cb_path, self.version_file):
+                log.info("{0} **** The linux version file {1} {2}  exists"
+                         .format(self.ip, self.cb_path, self.version_file))
                 return True
         return False
 
