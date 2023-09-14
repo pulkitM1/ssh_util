@@ -13,6 +13,11 @@ class SupportedPlatforms(object):
 class RemoteMachineShellConnection(object):
     __info_dict = dict()
 
+    @staticmethod
+    def get_info_for_server(server):
+        if server.ip in RemoteMachineShellConnection.__info_dict:
+            return RemoteMachineShellConnection.__info_dict[server.ip]
+
     def __new__(cls, *args, **kwargs):
         server = args[0]
         if server.ip in RemoteMachineShellConnection.__info_dict:
