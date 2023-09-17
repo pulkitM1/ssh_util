@@ -91,21 +91,17 @@ class InstallHelper(object):
             os = "amzn2"
         return os
 
-    def validate_server_status(self, servers):
-        if not self.check_server_state(servers):
-            return False
-
+    def validate_server_status(self, node_helpers):
         result = True
         known_os = set()
-        for server in servers:
-            info = RemoteMachineShellConnection.get_info_for_server(server)
-            curr_os = self.get_os(info)
-            if curr_os not in SUPPORTED_OS:
+        for node_helper in node_helpers:
+            curr_os = node_helper.os_type
+            if node_helper.os_type not in SUPPORTED_OS:
                 self.log.critical("{} - Unsupported os: {}"
-                                  .format(server.ip, curr_os))
+                                  .format(server.ip, node_helper.os_type))
                 result = False
             else:
-                known_os.add(curr_os)
+                known_os.add(node_helper.os_type)
 
         if len(known_os) != 1:
             result = False

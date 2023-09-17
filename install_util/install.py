@@ -5,6 +5,7 @@ import sys
 from install_util.install_lib.helper import InstallHelper
 from install_util.install_lib.node_helper import NodeInstaller, NodeInstallInfo
 from install_util.test_input import TestInputParser
+from shell_util.remote_connection import RemoteMachineShellConnection
 
 
 def start_and_wait_for_threads(thread_list, timeout):
@@ -28,22 +29,31 @@ def main(logger):
         server.install_status = "not_started"
 
     logger.info("Node health check")
-    okay = helper.validate_server_status(user_input.servers)
-    if not okay:
+    if not helper.check_server_state(user_input.servers):
         return 1
 
     # Objects for each node to track the URLs / state to reuse
-    node_helpers = [NodeInstallInfo(server, args.version)
-                    for server in user_input.servers]
+    node_helpers = [
+        NodeInstallInfo(
+            server,
+            helper.get_os(
+                RemoteMachineShellConnection.get_info_for_server(server)),
+            args.version, args.edition)
+        for server in user_input.servers]
+
+    logger.info("Validate os_type across servers")
+    okay = helper.validate_server_status(node_helpers)
+    if not okay:
+        return 1
 
     logger.info("Populating build url to download")
     if args.url:
         for node_helper in node_helpers:
             node_helper.build_url = args.url
     else:
-        tasks_to_run = ["populate_url"]
+        tasks_to_run = ["populate_build_url"]
         if args.install_debug_info:
-            tasks_to_run.append("populate_debug_url")
+            tasks_to_run.append("populate_debug_build_url")
 
         url_builder_threads = \
             [NodeInstaller(logger, node_helper, tasks_to_run)
@@ -79,7 +89,10 @@ def main(logger):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format='%(levelname)s:%(message)s',
+                        level=logging.ERROR)
     log = logging.getLogger("install_util")
+
     start_time = time.time()
     exit_status = main(log)
     log.info("TOTAL INSTALL TIME = {0} seconds"
