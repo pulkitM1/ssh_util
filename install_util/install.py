@@ -33,13 +33,15 @@ def main(logger):
         return 1
 
     # Objects for each node to track the URLs / state to reuse
-    node_helpers = [
-        NodeInstallInfo(
-            server,
-            helper.get_os(
-                RemoteMachineShellConnection.get_info_for_server(server)),
-            args.version, args.edition)
-        for server in user_input.servers]
+    node_helpers = list()
+    for server in user_input.servers:
+        server_info = RemoteMachineShellConnection.get_info_for_server(server)
+        node_helpers.append(
+            NodeInstallInfo(server,
+                            server_info,
+                            helper.get_os(server_info),
+                            args.version,
+                            args.edition))
 
     logger.info("Validate os_type across servers")
     okay = helper.validate_server_status(node_helpers)
@@ -61,6 +63,14 @@ def main(logger):
         okay = start_and_wait_for_threads(url_builder_threads, 60)
         if not okay:
             return 1
+
+    logger.info("Checking URL status")
+    url_builder_threads = \
+        [NodeInstaller(logger, node_helper, ["check_url_status"])
+         for node_helper in node_helpers]
+    okay = start_and_wait_for_threads(url_builder_threads, 60)
+    if not okay:
+        return 1
 
     logger.info("Downloading build")
     if args.skip_local_download:
@@ -89,7 +99,7 @@ def main(logger):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s:%(message)s',
+    logging.basicConfig(format='%(levelname)s: %(message)s',
                         level=logging.ERROR)
     log = logging.getLogger("install_util")
 
