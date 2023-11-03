@@ -1,8 +1,9 @@
+from shell_util.platforms.constants import WindowsConstants
 from shell_util.remote_machine import RemoteMachineProcess
 from shell_util.shell_conn import ShellConnection
 
 
-class Windows(ShellConnection):
+class Windows(ShellConnection, WindowsConstants):
     def __init__(self, test_server, info=None):
         super(Windows, self).__init__(test_server)
         self.nonroot = True
