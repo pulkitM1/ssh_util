@@ -16,8 +16,7 @@ LINUX_AMD64 = DEBIAN + UBUNTU
 AMD64 = DEBIAN + UBUNTU + WINDOWS_SERVER
 DEBUG_INFO_SUPPORTED = CENTOS + SUSE + RHEL + OEL + AMAZON + DEBIAN + UBUNTU + ALMA + ROCKY
 
-
-class BuildUrlConstants(object):
+class BuildUrl(object):
     CB_DOWNLOAD_SERVER = "172.23.126.166"
     CB_RELEASE_URL_PATH = "builds/releases"
     CB_LATESTBUILDS_URL_PATH = "builds/latestbuilds/couchbase-server"
