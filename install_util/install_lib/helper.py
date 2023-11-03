@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 
-from install_util.constants import SUPPORTED_OS
+from install_util.constants.build import SUPPORTED_OS
 from shell_util.remote_connection import RemoteMachineShellConnection
 
 

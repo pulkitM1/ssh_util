@@ -1,10 +1,7 @@
+from install_util.constants.linux import LinuxConstants
 from shell_util.platforms.linux import Linux as LinuxPlatform
 
 
-class Linux(LinuxPlatform):
-    download_dir = "/tmp"
-    default_install_dir = "/opt/couchbase"
-
-    # Non-root params
-    nonroot_download_dir = "/home/nonroot"
-    nonroot_install_dir = "%s/cb/opt/couchbase" % nonroot_download_dir
+class Linux(LinuxPlatform, LinuxConstants):
+    def __init__(self, test_server, info=None):
+        super(Linux, self).__init__(test_server, info)

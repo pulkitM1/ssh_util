@@ -82,6 +82,15 @@ def main(logger):
         # Local file download and scp to all nodes
         download_threads = [
             NodeInstaller(logger, node_helpers[0], ["local_download_build"])]
+        okay = start_and_wait_for_threads(download_threads,
+                                          args.build_download_timeout)
+        if not okay:
+            return 1
+
+        download_threads = \
+            [NodeInstaller(logger, node_helper, ["copy_local_build_to_server"])
+             for node_helper in node_helpers]
+
     okay = start_and_wait_for_threads(download_threads,
                                       args.build_download_timeout)
     if not okay:

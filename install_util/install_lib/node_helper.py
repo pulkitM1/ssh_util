@@ -5,8 +5,11 @@ import install_util.constants
 import urllib.error
 import urllib.parse
 import urllib.request
-from install_util.constants import BuildUrlConstants
-from shell_util.remote_connection import RemoteMachineShellConnection
+from install_util.constants.build import BuildUrl, LOCAL_DOWNLOAD_DIR, \
+    LINUX_DISTROS, MACOS_VERSIONS, WGET_CMD, WINDOWS_SERVER
+from install_util.platforms.linux import Linux
+from install_util.platforms.unix import Unix
+from install_util.platforms.windows import Windows
 
 
 class NodeInstallInfo(object):
@@ -36,6 +39,23 @@ class InstallSteps(object):
             self.log.info(msg)
         sleep(timeout)
 
+    @staticmethod
+    def __get_shell_for_install(node_install_info):
+        target_class = None
+        if node_install_info.os_type in LINUX_DISTROS:
+            t_class = Linux
+        elif node_install_info.os_type in MACOS_VERSIONS:
+            t_class = Unix
+        elif node_install_info.os_type in WINDOWS_SERVER:
+            t_class = Windows
+        return t_class(node_install_info.server, node_install_info.server_info)
+
+    @staticmethod
+    def get_download_dir(shell):
+        if shell.nonroot:
+            return shell.nonroot_download_dir
+        return shell.download_dir
+
     def __construct_build_url(self, is_debuginfo_build=False):
         file_name = None
         build_version = self.node_install_info.version.split("-")
@@ -46,23 +66,23 @@ class InstallSteps(object):
         if len(build_version) == 1:
             # Release build url
             url_path = "http://{}/{}/{}" \
-                .format(BuildUrlConstants.CB_DOWNLOAD_SERVER,
-                        BuildUrlConstants.CB_RELEASE_URL_PATH,
+                .format(BuildUrl.CB_DOWNLOAD_SERVER,
+                        BuildUrl.CB_RELEASE_URL_PATH,
                         build_version[0])
         else:
             # Build_number specific url
             main_version = ".".join(build_version[0].split(".")[:2])
             # Reference: builds/latestbuilds/couchbase-server/trinity/1000
             url_path = "http://{}/{}/{}/{}" \
-                .format(BuildUrlConstants.CB_DOWNLOAD_SERVER,
-                        BuildUrlConstants.CB_LATESTBUILDS_URL_PATH,
-                        BuildUrlConstants.CB_VERSION_NAME[main_version],
+                .format(BuildUrl.CB_DOWNLOAD_SERVER,
+                        BuildUrl.CB_LATESTBUILDS_URL_PATH,
+                        BuildUrl.CB_VERSION_NAME[main_version],
                         build_version[1])
 
         build_version = "-".join(build_version)
 
         file_prefix = "{}-{}" \
-            .format(BuildUrlConstants.CB_BUILD_FILE_PREFIX,
+            .format(BuildUrl.CB_BUILD_FILE_PREFIX,
                     self.node_install_info.edition)
 
         if os_type in install_util.constants.X86:
@@ -163,19 +183,28 @@ class InstallSteps(object):
     def check_build_url_status(self):
         self.check_url_status(self.node_install_info.build_url)
 
-    def download_build_locally(self):
-        file_name = "/tmp/" + self.node_install_info.build_url.split('/')[-1]
-        f, r = urllib.request.urlretrieve(self.node_install_info.build_url,
-                                          file_name)
-        self.log.debug("File saved as '{}'".format(f))
-        self.log.debug("File size: {}".format(r["Content-Length"]))
-        self.log.debug("File create date: {}".format(r["Date"]))
+    def download_build_locally(self, build_url):
+        f_path = "{}/{}".format(LOCAL_DOWNLOAD_DIR, build_url.split('/')[-1])
+        f, r = urllib.request.urlretrieve(build_url, f_path)
+        return (f, r)
 
-    def download_build(self):
-        pass
+    def copy_build_to_server(self, build_url):
+        f_path = "{}/{}".format(LOCAL_DOWNLOAD_DIR, build_url.split('/')[-1])
+        shell = RemoteMachineShellConnection(self.node_install_info.server)
+        result = shell.copy_file_local_to_remote(f_path,
+                                                 shell.build_download_dir)
+        shell.disconnect()
+        return result
 
-    def download_debug_info_build(self):
-        pass
+    def download_build(self, build_url, non_root_installer=False):
+        shell = RemoteMachineShellConnection(self.node_install_info.server)
+        download_dir = self.get_download_dir(shell)
+        cmd = shell.wget_cmd.format(download_dir, build_url)
+        shell.execute_cmd(cmd)
+        if non_root_installer:
+            f_name = build_url.split("/")[-1]
+            shell.execute_cmd("chmod a+x {}/{}".format(download_dir, f_name))
+        shell.disconnect()
 
 
 class NodeInstaller(Thread):
@@ -207,12 +236,28 @@ class NodeInstaller(Thread):
                         self.node_install_info.debug_build_url)
             elif step == "local_download_build":
                 self.node_install_info.state = "downloading_build_on_executor"
-                installer.download_build_locally()
+                build_urls = [self.node_install_info.build_url]
+                if self.node_install_info.debug_build_url:
+                    build_urls.append(self.node_install_info.debug_build_url)
+
+                for build_url in build_urls:
+                    f_name, res = installer.download_build_locally(build_url)
+                    self.log.debug("File saved as '{}'".format(f_name))
+                    self.log.debug("File size: {}".format(r["Content-Length"]))
+                    self.log.debug("File create date: {}".format(r["Date"]))
+            elif step == "copy_local_build_to_server":
+                self.node_install_info.state = "copying_build_to_remote_server"
+                build_urls = [self.node_install_info.build_url]
+                if self.node_install_info.debug_build_url:
+                    build_urls.append(self.node_install_info.build_url)
+                for build_url in build_urls:
+                    installer.result = installer.result and \
+                        installer.copy_build_to_server(build_url)
             elif step == "download_build":
                 self.node_install_info.state = "downloading_build"
-                installer.download_build()
+                installer.download_build(self.node_install_info.build_url)
                 if self.node_install_info.debug_build_url:
-                    installer.download_debug_info_build()
+                    installer.download_build(self.node_install_info.build_url)
             elif step == "uninstall":
                 self.node_install_info.state = "uninstalling"
             elif step == "deep_cleanup":
