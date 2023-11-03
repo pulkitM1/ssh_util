@@ -287,13 +287,16 @@ class CommonShellAPIs(object):
             return False
 
     def copy_file_local_to_remote(self, src_path, des_path):
+        result = True
         sftp = self._ssh_client.open_sftp()
         try:
             sftp.put(src_path, des_path)
         except IOError:
             log.error('Can not copy file')
+            result = False
         finally:
             sftp.close()
+        return result
 
     def copy_file_remote_to_local(self, rem_path, des_path):
         sftp = self._ssh_client.open_sftp()
