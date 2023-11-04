@@ -5,11 +5,12 @@ import install_util.constants
 import urllib.error
 import urllib.parse
 import urllib.request
-from install_util.constants.build import BuildUrl, LOCAL_DOWNLOAD_DIR, \
-    LINUX_DISTROS, MACOS_VERSIONS, WGET_CMD, WINDOWS_SERVER
+from install_util.constants.build import BuildUrl, \
+    LINUX_DISTROS, MACOS_VERSIONS, WINDOWS_SERVER
 from install_util.platforms.linux import Linux
 from install_util.platforms.unix import Unix
 from install_util.platforms.windows import Windows
+from shell_util.remote_connection import RemoteMachineShellConnection
 
 
 class NodeInstallInfo(object):
@@ -41,7 +42,7 @@ class InstallSteps(object):
 
     @staticmethod
     def __get_shell_for_install(node_install_info):
-        target_class = None
+        t_class = None
         if node_install_info.os_type in LINUX_DISTROS:
             t_class = Linux
         elif node_install_info.os_type in MACOS_VERSIONS:
@@ -85,7 +86,7 @@ class InstallSteps(object):
             .format(BuildUrl.CB_BUILD_FILE_PREFIX,
                     self.node_install_info.edition)
 
-        if os_type in install_util.constants.X86:
+        if os_type in install_util.constants.build.X86:
             # couchbase-server-enterprise-7.1.5-linux.x86_64.rpm
             # couchbase-server-enterprise-debuginfo-7.1.5-linux.x86_64.rpm
             if is_debuginfo_build:
@@ -100,7 +101,7 @@ class InstallSteps(object):
                         os_type,
                         node_info.architecture_type,
                         node_info.deliverable_type)
-        elif os_type in install_util.constants.LINUX_AMD64:
+        elif os_type in install_util.constants.build.LINUX_AMD64:
             # TODO: Check install_utils.py L1127 redundant code presence
             # couchbase-server-enterprise_7.1.5-linux_amd64.deb
             # couchbase-server-enterprise-dbg_7.1.5-linux_amd64.deb
@@ -116,7 +117,7 @@ class InstallSteps(object):
                         os_type,
                         "amd64",
                         node_info.deliverable_type)
-        elif os_type in install_util.constants.WINDOWS_SERVER:
+        elif os_type in install_util.constants.build.WINDOWS_SERVER:
             # couchbase-server-enterprise_6.5.0-4557-windows_amd64.msi
             if "windows" in self.node_install_info.os_type:
                 self.node_install_info.deliverable_type = "msi"
@@ -126,7 +127,7 @@ class InstallSteps(object):
                         self.node_install_info.os_type,
                         "amd64",
                         node_info.deliverable_type)
-        elif os_type in install_util.constants.MACOS_VERSIONS:
+        elif os_type in install_util.constants.build.MACOS_VERSIONS:
             # couchbase-server-enterprise_6.5.0-4557-macos_x86_64.dmg
             file_name = "{}_{}-{}_{}-{}.{}" \
                 .format(file_prefix,
@@ -184,20 +185,20 @@ class InstallSteps(object):
         self.check_url_status(self.node_install_info.build_url)
 
     def download_build_locally(self, build_url):
-        f_path = "{}/{}".format(LOCAL_DOWNLOAD_DIR, build_url.split('/')[-1])
+        f_path = "{}/{}".format(".", build_url.split('/')[-1])
         f, r = urllib.request.urlretrieve(build_url, f_path)
-        return (f, r)
+        return f, r
 
     def copy_build_to_server(self, build_url):
-        f_path = "{}/{}".format(LOCAL_DOWNLOAD_DIR, build_url.split('/')[-1])
-        shell = RemoteMachineShellConnection(self.node_install_info.server)
+        f_path = "{}/{}".format(".", build_url.split('/')[-1])
+        shell = self.__get_shell_for_install(self.node_install_info)
         result = shell.copy_file_local_to_remote(f_path,
-                                                 shell.build_download_dir)
+                                                 shell.download_dir)
         shell.disconnect()
         return result
 
     def download_build(self, build_url, non_root_installer=False):
-        shell = RemoteMachineShellConnection(self.node_install_info.server)
+        shell = self.__get_shell_for_install(self.node_install_info)
         download_dir = self.get_download_dir(shell)
         cmd = shell.wget_cmd.format(download_dir, build_url)
         shell.execute_cmd(cmd)
@@ -243,8 +244,8 @@ class NodeInstaller(Thread):
                 for build_url in build_urls:
                     f_name, res = installer.download_build_locally(build_url)
                     self.log.debug("File saved as '{}'".format(f_name))
-                    self.log.debug("File size: {}".format(r["Content-Length"]))
-                    self.log.debug("File create date: {}".format(r["Date"]))
+                    self.log.debug("File size: {}".format(res["Content-Length"]))
+                    self.log.debug("File create date: {}".format(res["Date"]))
             elif step == "copy_local_build_to_server":
                 self.node_install_info.state = "copying_build_to_remote_server"
                 build_urls = [self.node_install_info.build_url]

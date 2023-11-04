@@ -43,12 +43,12 @@ def main(logger):
                             args.version,
                             args.edition))
 
-    logger.info("Validate os_type across servers")
+    # Validate os_type across servers
     okay = helper.validate_server_status(node_helpers)
     if not okay:
         return 1
 
-    logger.info("Populating build url to download")
+    # Populating build url to download
     if args.url:
         for node_helper in node_helpers:
             node_helper.build_url = args.url
@@ -64,7 +64,7 @@ def main(logger):
         if not okay:
             return 1
 
-    logger.info("Checking URL status")
+    # Checking URL status
     url_builder_threads = \
         [NodeInstaller(logger, node_helper, ["check_url_status"])
          for node_helper in node_helpers]
@@ -72,7 +72,7 @@ def main(logger):
     if not okay:
         return 1
 
-    logger.info("Downloading build")
+    # Downloading build
     if args.skip_local_download:
         # Download on individual nodes
         download_threads = \
