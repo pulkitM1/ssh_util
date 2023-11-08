@@ -37,7 +37,10 @@ class InstallHelper(object):
         parser = ArgumentParser(description="Installer for Couchbase-Server")
         parser.add_argument("--install_tasks",
                             help="List of tasks to run '-' separated",
-                            default="uninstall-install-init-cleanup")
+                            default="uninstall"
+                                    "-install"
+                                    "-init_cluster"
+                                    "-post_install_cleanup")
         parser.add_argument("-i", "--ini", dest="ini",
                             help="Ini file path",
                             required=True)
@@ -95,10 +98,10 @@ class InstallHelper(object):
         result = True
         known_os = set()
         for node_helper in node_helpers:
-            curr_os = node_helper.os_type
             if node_helper.os_type not in SUPPORTED_OS:
-                self.log.critical("{} - Unsupported os: {}"
-                                  .format(server.ip, node_helper.os_type))
+                self.log.critical(
+                    "{} - Unsupported os: {}"
+                    .format(node_helper.server.ip, node_helper.os_type))
                 result = False
             else:
                 known_os.add(node_helper.os_type)
