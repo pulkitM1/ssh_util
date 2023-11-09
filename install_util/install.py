@@ -19,6 +19,19 @@ def start_and_wait_for_threads(thread_list, timeout):
     return okay
 
 
+def print_install_status(thread_list, logger):
+    status_msg = "\n"
+    for tem_thread in thread_list:
+        node_ip = tem_thread.node_install_info.server.ip
+        t_state = tem_thread.node_install_info.state
+        if tem_thread.result:
+            status_msg += "  {}: Complete".format(node_ip)
+        else:
+            status_msg += "  {}: Failure during {}".format(node_ip, t_state)
+    status_msg += "\n"
+    logger.info(status_msg)
+
+
 def main(logger):
     helper = InstallHelper(logger)
     args = helper.parse_command_line_args(sys.argv[1:])
@@ -102,6 +115,7 @@ def main(logger):
         NodeInstaller(logger, node_helper, install_tasks)
         for node_helper in node_helpers]
     okay = start_and_wait_for_threads(install_threads, args.timeout)
+    print_install_status(install_threads, logger)
     if not okay:
         return 1
     return 0
