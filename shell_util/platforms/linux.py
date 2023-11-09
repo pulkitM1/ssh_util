@@ -5,6 +5,8 @@ from shell_util.shell_conn import ShellConnection
 class Linux(ShellConnection, LinuxConstants):
     def __init__(self, test_server, info=None):
         super(Linux, self).__init__(test_server)
+        self.nonroot = False
+        self.use_sudo = False
         self.info = info
 
     def get_mem_usage_by_process(self, process_name):

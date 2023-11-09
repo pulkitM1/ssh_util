@@ -660,8 +660,6 @@ class CommonShellAPIs(object):
                         use_channel=False, timeout=600, get_exit_code=False):
         if getattr(self, "info", None) is None and info is not None :
             self.info = info
-        else:
-            self.extract_remote_info()
 
         if self.info.type.lower() == 'windows':
             self.use_sudo = False
