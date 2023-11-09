@@ -41,7 +41,7 @@ class InstallSteps(object):
         sleep(timeout)
 
     @staticmethod
-    def __get_shell_for_install(node_install_info):
+    def get_node_installer(node_install_info):
         t_class = None
         if node_install_info.os_type in LINUX_DISTROS:
             t_class = Linux
@@ -49,13 +49,13 @@ class InstallSteps(object):
             t_class = Unix
         elif node_install_info.os_type in WINDOWS_SERVER:
             t_class = Windows
-        return t_class(node_install_info.server, node_install_info.server_info)
+        return t_class(node_install_info.server)
 
     @staticmethod
-    def get_download_dir(shell):
-        if shell.nonroot:
-            return shell.nonroot_download_dir
-        return shell.download_dir
+    def get_download_dir(node_installer):
+        if node_installer.shell.nonroot:
+            return node_installer.nonroot_download_dir
+        return node_installer.download_dir
 
     def __construct_build_url(self, is_debuginfo_build=False):
         file_name = None
@@ -189,23 +189,27 @@ class InstallSteps(object):
         f, r = urllib.request.urlretrieve(build_url, f_path)
         return f, r
 
-    def copy_build_to_server(self, build_url):
+    def copy_build_to_server(self, node_installer, build_url):
         f_path = "{}/{}".format(".", build_url.split('/')[-1])
-        shell = self.__get_shell_for_install(self.node_install_info)
-        result = shell.copy_file_local_to_remote(f_path,
-                                                 shell.download_dir)
-        shell.disconnect()
+        result = node_installer.shell.copy_file_local_to_remote(
+            f_path, node_installer.shell.download_dir)
+        node_installer.shell.disconnect()
         return result
 
-    def download_build(self, build_url, non_root_installer=False):
-        shell = self.__get_shell_for_install(self.node_install_info)
-        download_dir = self.get_download_dir(shell)
-        cmd = shell.wget_cmd.format(download_dir, build_url)
-        shell.execute_cmd(cmd)
+    def download_build(self, node_installer, build_url,
+                       non_root_installer=False):
+        download_dir = self.get_download_dir(node_installer)
+        f_name = build_url.split("/")[-1]
+        # Remove old build (if exists)
+        cmd = "rm -f {}/couchbase-server*".format(download_dir)
+        node_installer.shell.execute_command(cmd)
+        # Download the build
+        cmd = node_installer.wget_cmd.format(download_dir, build_url)
+        node_installer.shell.execute_command(cmd)
         if non_root_installer:
-            f_name = build_url.split("/")[-1]
-            shell.execute_cmd("chmod a+x {}/{}".format(download_dir, f_name))
-        shell.disconnect()
+            node_installer.shell.execute_cmd("chmod a+x {}/{}"
+                                             .format(download_dir, f_name))
+        node_installer.shell.disconnect()
 
 
 class NodeInstaller(Thread):
@@ -218,6 +222,8 @@ class NodeInstaller(Thread):
 
     def run(self):
         installer = InstallSteps(self.log, self.node_install_info)
+        node_installer = installer.get_node_installer(
+            self.node_install_info)
         for step in self.steps:
             self.log.info("{} - Running '{}'"
                           .format(self.node_install_info.server.ip, step))
@@ -253,28 +259,39 @@ class NodeInstaller(Thread):
                     build_urls.append(self.node_install_info.build_url)
                 for build_url in build_urls:
                     installer.result = installer.result and \
-                        installer.copy_build_to_server(build_url)
+                        installer.copy_build_to_server(node_installer,
+                                                       build_url)
             elif step == "download_build":
                 self.node_install_info.state = "downloading_build"
-                installer.download_build(self.node_install_info.build_url)
+                installer.download_build(node_installer,
+                                         self.node_install_info.build_url)
                 if self.node_install_info.debug_build_url:
-                    installer.download_build(self.node_install_info.build_url)
+                    installer.download_build(node_installer,
+                                             self.node_install_info.build_url)
             elif step == "uninstall":
                 self.node_install_info.state = "uninstalling"
+                node_installer.uninstall()
             elif step == "deep_cleanup":
                 self.node_install_info.state = "deep_cleaning"
             elif step == "pre_install":
                 self.node_install_info.state = "pre_install_procedure"
             elif step == "install":
                 self.node_install_info.state = "installing"
+                node_installer.install(self.node_install_info.build_url)
+                node_installer.post_install()
+            elif step == "init_cluster":
+                self.node_install_info.state = "init_cluster"
+                node_installer.init_cluster(self.node_install_info.server)
             elif step == "post_install":
                 self.node_install_info.state = "post_install_procedure"
             elif step == "post_install_cleanup":
                 self.node_install_info.state = "post_install_cleanup"
             else:
+                self.log.critical("Invalid step '{}'".format(step))
                 installer.result = False
 
             if installer.result is False:
                 break
 
+        node_installer.shell.disconnect()
         self.result = installer.result
