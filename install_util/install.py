@@ -34,6 +34,7 @@ def print_install_status(thread_list, logger):
 
 def main(logger):
     helper = InstallHelper(logger)
+    helper.populate_cb_server_versions()
     args = helper.parse_command_line_args(sys.argv[1:])
     logger.setLevel(args.log_level.upper())
     user_input = TestInputParser.get_test_input(args)

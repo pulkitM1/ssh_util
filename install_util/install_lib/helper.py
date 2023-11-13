@@ -1,6 +1,9 @@
+import json
+import re
+import requests
 from argparse import ArgumentParser
 
-from install_util.constants.build import SUPPORTED_OS
+from install_util.constants.build import SUPPORTED_OS, BuildUrl
 from shell_util.remote_connection import RemoteMachineShellConnection
 
 
@@ -109,3 +112,21 @@ class InstallHelper(object):
         if len(known_os) != 1:
             result = False
         return result
+
+    def populate_cb_server_versions(self):
+        cb_server_manifests_url = "https://github.com/couchbase" \
+                                  "/manifest/tree/master/couchbase-server/"
+        raw_content_url = "https://raw.githubusercontent.com/couchbase" \
+                          "/manifest/master/couchbase-server/"
+        version_pattern = r'<annotation name="VERSION" value="([0-9\.]+)"'
+        version_pattern = re.compile(version_pattern)
+        data = json.loads(requests.get(cb_server_manifests_url).text)
+        for item in data["payload"]["tree"]["items"]:
+            if item["contentType"] == "file" and item["name"].endswith(".xml"):
+                rel_name = item["name"].replace(".xml", "")
+                data = requests.get(raw_content_url + item["name"]).text
+                rel_ver = re.findall(version_pattern, data)[0][:3]
+                if rel_ver not in BuildUrl.CB_VERSION_NAME:
+                    self.log.info("Adding missing version {}={}"
+                                  .format(rel_ver, rel_name))
+                    BuildUrl.CB_VERSION_NAME[rel_ver] = rel_name
