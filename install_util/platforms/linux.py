@@ -1,5 +1,3 @@
-from time import sleep
-
 from install_util.constants.linux import LinuxConstants
 from shell_util.remote_connection import RemoteMachineShellConnection
 

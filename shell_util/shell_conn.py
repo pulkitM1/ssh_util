@@ -308,7 +308,7 @@ class ShellConnection(CommonShellAPIs):
             is_linux_distro = False
             for name in filenames:
                 if name == 'os-release':
-                    # /etc/os-release seems like standard across linux distributions
+                    # /etc/os-release - likely standard across linux distros
                     filename = 'etc-os-release-{0}'.format(uuid.uuid4())
                     sftp.get(localpath=filename, remotepath='/etc/os-release')
                     file = open(filename)
@@ -319,21 +319,39 @@ class ShellConnection(CommonShellAPIs):
                     while line and (not is_version_id or not is_pretty_name):
                         log.debug(line)
                         if line.startswith('VERSION_ID'):
-                            os_version = line.split('=')[1].replace('"','')
+                            os_version = line.split('=')[1].replace('"', '')
                             os_version = os_version.rstrip('\n').rstrip(' ').rstrip('\\l').rstrip(
                                 ' ').rstrip('\\n').rstrip(' ')
                             is_version_id = True
                         elif line.startswith('PRETTY_NAME'):
-                            os_pretty_name = line.split('=')[1].replace('"','')
+                            os_pretty_name = line.split('=')[1].replace('"', '')
                             is_pretty_name = True
                         line = file.readline()
 
-                    os_distro_dict = {'ubuntu': 'Ubuntu', 'debian': 'Ubuntu', 'mint': 'Ubuntu',
-                        'amazon linux ami': 'CentOS', 'centos': 'CentOS', 'opensuse': 'openSUSE',
-                        'red': 'Red Hat', 'suse': 'SUSE', 'oracle': 'Oracle Linux', 'openshift' : 'CentOS'}
-                    os_shortname_dict = {'ubuntu': 'ubuntu', 'debian': 'debian', 'mint': 'ubuntu',
-                        'amazon linux ami': 'amzn2', 'centos': 'centos', 'opensuse': 'suse',
-                        'red': 'rhel', 'suse': 'suse', 'oracle': 'oel', 'openshift' : 'centos'}
+                    os_distro_dict = {'ubuntu': 'Ubuntu', 'debian': 'Ubuntu',
+                                      'mint': 'Ubuntu',
+                                      'centos': 'CentOS',
+                                      'openshift': 'CentOS',
+                                      'amazon linux 2': 'CentOS',
+                                      'amazon linux 2023': 'CentOS',
+                                      'opensuse': 'openSUSE',
+                                      'red': 'Red Hat',
+                                      'suse': 'SUSE',
+                                      'oracle': 'Oracle Linux',
+                                      'almalinux': 'AlmaLinux OS',
+                                      'rocky': 'Rocky Linux'}
+                    os_shortname_dict = {'ubuntu': 'ubuntu', 'mint': 'ubuntu',
+                                         'debian': 'debian',
+                                         'centos': 'centos',
+                                         'openshift': 'centos',
+                                         'suse': 'suse',
+                                         'opensuse': 'suse',
+                                         'amazon linux 2': 'amzn2',
+                                         'amazon linux 2023': 'al2023',
+                                         'red': 'rhel',
+                                         'oracle': 'oel',
+                                         'almalinux': 'alma',
+                                         'rocky': 'rocky'}
                     log.debug("os_pretty_name:" + os_pretty_name)
                     if os_pretty_name and "Amazon Linux 2" not in os_pretty_name:
                         os_name = os_pretty_name.split(' ')[0].lower()
@@ -356,8 +374,6 @@ class ShellConnection(CommonShellAPIs):
                 is_linux_distro = True
                 self.use_sudo = False
                 is_mac = False
-                arch = "local"
-                ext = "local"
                 filenames = []
             """ for Amazon Linux 2 only"""
             for name in filenames:
@@ -428,7 +444,7 @@ class ShellConnection(CommonShellAPIs):
                                 is_linux_distro = True
                     else:
                         log.error("Could not find OS name."
-                                 "It could be unsupport OS")
+                                  "It could be unsupport OS")
                     file.close()
                     os.remove(filename)
                     break
@@ -457,7 +473,7 @@ class ShellConnection(CommonShellAPIs):
         else:
             # now run uname -m to get the architechtre type
             if self.remote:
-                stdin, stdout, stderro = self._ssh_client.exec_command('uname -m')
+                stdin, stdout, _ = self._ssh_client.exec_command('uname -m')
                 stdin.close()
                 os_arch = ''
                 text = stdout.read().splitlines()
@@ -471,15 +487,18 @@ class ShellConnection(CommonShellAPIs):
                 except AttributeError:
                     os_arch += str(line)
                 # at this point we should know if its a linux or windows ditro
-            ext = {'Ubuntu' : "deb",
-                   'CentOS'  : "rpm",
-                   'Red Hat' : "rpm",
-                   "Mac"     : "dmg",
-                   "Debian"  : "deb",
-                   "openSUSE": "rpm",
-                   "SUSE"    : "rpm",
-                   "Oracle Linux": "rpm",
-                    "Amazon Linux 2": "rpm"}.get(os_distro, '')
+            ext = {'Ubuntu': 'deb',
+                   'CentOS': 'rpm',
+                   'Red Hat': 'rpm',
+                   'openSUSE': 'rpm',
+                   'SUSE': 'rpm',
+                   'Oracle Linux': 'rpm',
+                   'Amazon Linux 2023': 'rpm',
+                   'Amazon Linux 2': 'rpm',
+                   'AlmaLinux OS': 'rpm',
+                   'Rocky Linux': 'rpm',
+                   'Mac': 'dmg',
+                   'Debian': 'deb'}.get(os_distro, '')
             arch = {'i686': "x86",
                     'i386': "x86"}.get(os_arch, os_arch)
 
@@ -533,7 +552,7 @@ class ShellConnection(CommonShellAPIs):
 
     def monitor_process_memory(self, process_name, duration_in_seconds=180,
                                end=False):
-        # monitor this process and return list of memories in 7 seconds interval
+        # monitor this process and return list of memories in 7 secs interval
         end_time = time.time() + float(duration_in_seconds)
         count = 0
         vsz = []
@@ -546,12 +565,12 @@ class ShellConnection(CommonShellAPIs):
                 rss.append(process.rss)
             else:
                 log.info("{0}:process {1} is not running.  Wait for 2 seconds"
-                                   .format(self.remote_shell.ip, process_name))
+                         .format(self.remote_shell.ip, process_name))
                 count += 1
                 self.sleep(2)
                 if count == 5:
                     log.error("{0}:process {1} is not running at all."
-                                   .format(self.remote_shell.ip, process_name))
+                              .format(self.remote_shell.ip, process_name))
                     exit(1)
             log.info("sleep for 7 seconds before poll new processes")
             self.sleep(7)
