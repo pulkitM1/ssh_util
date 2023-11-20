@@ -29,14 +29,13 @@ class BuildUrl(object):
     CB_LATESTBUILDS_URL_PATH = "builds/latestbuilds/couchbase-server"
     CB_VERSION_NAME = {
         "0.0": "master",
-        "4.0": "sherlock", "4.1": "sherlock",
-        "4.5": "watson", "4.6": "watson",
-        "4.7": "spock", "5.0": "spock", "5.1": "spock",
+        "5.1": "spock",
         "5.5": "vulcan",
         "6.0": "alice",
         "6.5": "mad-hatter", "6.6": "mad-hatter",
         "7.0": "cheshire-cat",
         "7.1": "neo", "7.2": "neo",
+        "7.5": "elixir",
         "7.6": "trinity",
         "8.0": "morpheus"}
 

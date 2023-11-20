@@ -2,6 +2,7 @@ import logging
 import time
 import sys
 
+from install_util.constants.build import BuildUrl
 from install_util.install_lib.helper import InstallHelper
 from install_util.install_lib.node_helper import NodeInstaller, NodeInstallInfo
 from install_util.test_input import TestInputParser
@@ -34,7 +35,6 @@ def print_install_status(thread_list, logger):
 
 def main(logger):
     helper = InstallHelper(logger)
-    helper.populate_cb_server_versions()
     args = helper.parse_command_line_args(sys.argv[1:])
     logger.setLevel(args.log_level.upper())
     user_input = TestInputParser.get_test_input(args)
@@ -44,6 +44,15 @@ def main(logger):
 
     logger.info("Node health check")
     if not helper.check_server_state(user_input.servers):
+        return 1
+
+    # Populate valid couchbase version and validate the input version
+    try:
+        helper.populate_cb_server_versions()
+    except Exception as e:
+        logger.warning("Error while reading couchbase version: {}".format(e))
+    if args.version[:3] not in BuildUrl.CB_VERSION_NAME.keys():
+        log.critical("Version '{}' not yet supported".format(args.version[:3]))
         return 1
 
     # Objects for each node to track the URLs / state to reuse

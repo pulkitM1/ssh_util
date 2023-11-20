@@ -1,7 +1,7 @@
 import json
 import re
-import requests
 from argparse import ArgumentParser
+from urllib.request import urlopen
 
 from install_util.constants.build import SUPPORTED_OS, BuildUrl
 from shell_util.remote_connection import RemoteMachineShellConnection
@@ -120,12 +120,15 @@ class InstallHelper(object):
                           "/manifest/master/couchbase-server/"
         version_pattern = r'<annotation name="VERSION" value="([0-9\.]+)"'
         version_pattern = re.compile(version_pattern)
-        data = json.loads(requests.get(cb_server_manifests_url).text)
+        payload_pattern = r'>({"payload".*})<'
+        payload_pattern = re.compile(payload_pattern)
+        data = urlopen(cb_server_manifests_url).read()
+        data = json.loads(re.findall(payload_pattern, data.decode())[0])
         for item in data["payload"]["tree"]["items"]:
             if item["contentType"] == "file" and item["name"].endswith(".xml"):
                 rel_name = item["name"].replace(".xml", "")
-                data = requests.get(raw_content_url + item["name"]).text
-                rel_ver = re.findall(version_pattern, data)[0][:3]
+                data = urlopen(raw_content_url + item["name"]).read()
+                rel_ver = re.findall(version_pattern, data.decode())[0][:3]
                 if rel_ver not in BuildUrl.CB_VERSION_NAME:
                     self.log.info("Adding missing version {}={}"
                                   .format(rel_ver, rel_name))
