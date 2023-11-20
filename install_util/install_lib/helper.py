@@ -110,6 +110,7 @@ class InstallHelper(object):
                 known_os.add(node_helper.os_type)
 
         if len(known_os) != 1:
+            self.log.critical("Multiple OS versions found!")
             result = False
         return result
 

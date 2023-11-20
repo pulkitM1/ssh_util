@@ -44,7 +44,7 @@ class LinuxConstants(object):
             "post_install_retry": "systemctl restart couchbase-server.service",
         },
         "rpm": {
-            "uninstall": "{} yes | yum remove 'couchbase*' > /dev/null; " +
+            "uninstall": "{} yes | yum remove 'couchbase*' > /dev/null; "
                 "rm -rf {} {} > /dev/null && echo 1 || echo 0"
                 .format(unmount_nfs_cmd, default_install_dir,
                         nonroot_install_dir),
