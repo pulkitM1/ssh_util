@@ -292,7 +292,7 @@ class CommonShellAPIs(object):
         try:
             sftp.put(src_path, des_path)
         except IOError:
-            log.error('Can not copy file')
+            self.log.error('Can not copy file')
             result = False
         finally:
             sftp.close()
@@ -304,7 +304,7 @@ class CommonShellAPIs(object):
         try:
             sftp.get(rem_path, des_path)
         except IOError as e:
-            log.error('Can not copy file', e)
+            self.log.error('Can not copy file', e)
             result = False
         finally:
             sftp.close()
@@ -313,7 +313,7 @@ class CommonShellAPIs(object):
     # copy multi files from local to remote server
     def copy_files_local_to_remote(self, src_path, des_path):
         files = os.listdir(src_path)
-        log.info("copy files from {0} to {1}".format(src_path, des_path))
+        self.log.info("copy files from {0} to {1}".format(src_path, des_path))
         # self.execute_batch_command("cp -r  {0}/* {1}".format(src_path, des_path))
         for file in files:
             if file.find("wget") != 1:
