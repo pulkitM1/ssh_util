@@ -732,8 +732,6 @@ class CommonShellAPIs(object):
             if len(error):
                 self.log.info('command executed with {} but got an error {} ...'.format(
                     self.server.ssh_username, str(error)[:400]))
-            else:
-                self.log.info('command executed successfully with {}'.format(self.server.ssh_username))
         return (output, error, exit_code) if get_exit_code else (output, error)
 
     def execute_non_sudo_command(self, command, info=None, debug=True,
