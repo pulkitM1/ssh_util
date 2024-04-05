@@ -10,9 +10,8 @@ class LinuxHelper(RemoteConnectionHelper):
         os = ""
         os_version = ""
 
-        with self.lock:
-            command = "cat /etc/os-release"
-            output, error = self.shell.execute_command(command)
+        command = "cat /etc/os-release"
+        output, error = self.shell.execute_command(command)
 
         if len(error) > 0:
             msg = f"Command {command} failed with error {error}"
@@ -33,9 +32,8 @@ class LinuxHelper(RemoteConnectionHelper):
     def find_mac_address(self):
         mac_addr = ""
 
-        with self.lock:
-            command = "ip -o link show |cut -d ' ' -f 2,20 | grep eth0"
-            output, error = self.shell.execute_command(command)
+        command = "ip -o link show |cut -d ' ' -f 2,20 | grep eth0"
+        output, error = self.shell.execute_command(command)
 
         if len(error) > 0:
             msg = f"Command {command} failed with error {error}"
@@ -51,9 +49,8 @@ class LinuxHelper(RemoteConnectionHelper):
     def find_memory_total(self):
         memory = 0
 
-        with self.lock:
-            command = "grep MemTotal /proc/meminfo"
-            output, error = self.shell.execute_command(command)
+        command = "grep MemTotal /proc/meminfo"
+        output, error = self.shell.execute_command(command)
 
         if len(error) > 0:
             msg = f"Command {command} failed with error {error}"

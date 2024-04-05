@@ -8,8 +8,6 @@ from node_infra_helper.platforms.linux.debian_based.debian_helper import DebianH
 from node_infra_helper.platforms.linux.rpm_based.rpm_helper import RPMHelper
 from node_infra_helper.platforms.linux.rpm_based.suse_linux.suse_helper import SUSEHelper
 
-import threading
-
 class RemoteConnectionObjectFactory:
     @staticmethod
     def fetch_helper(ipaddr, ssh_username, ssh_password):
