@@ -45,3 +45,10 @@ class RemoteMachineShellConnection(object):
         obj.ssh_connect_with_retries(server.ip, server.ssh_username,
                                      server.ssh_password, server.ssh_key)
         return obj
+
+    @staticmethod
+    def delete_info_for_server(server, ipaddr=None):
+        ipaddr = ipaddr or server.ip
+        if ipaddr in RemoteMachineShellConnection.__info_dict:
+            del RemoteMachineShellConnection.__info_dict[ipaddr]
+        RemoteMachineShellConnection.__info_dict.pop(ipaddr, None)
