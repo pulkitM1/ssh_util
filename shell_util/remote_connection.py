@@ -48,7 +48,7 @@ class RemoteMachineShellConnection(object):
 
     @staticmethod
     def delete_info_for_server(server, ipaddr=None):
-        ipaddr = ipaddr if ipaddr else server.ip
+        ipaddr = ipaddr or server.ip
         if ipaddr in RemoteMachineShellConnection.__info_dict:
             del RemoteMachineShellConnection.__info_dict[ipaddr]
         RemoteMachineShellConnection.__info_dict.pop(ipaddr, None)
