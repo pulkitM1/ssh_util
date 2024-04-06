@@ -59,4 +59,3 @@ class LinuxHelper(RemoteConnectionHelper):
 
     def copy_file_remote_to_local(self, src_remote_path, dest_local_path):
         return self.shell.copy_file_remote_to_local(src_remote_path, dest_local_path)
-

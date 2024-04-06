@@ -7,7 +7,7 @@ class DebianHelper(LinuxHelper):
         super().__del__()
 
     def install_package(self, package):
-        command = f"apt-get install -y {package}"
+        command = f"DEBIAN_FRONTEND=noninteractive apt-get install -y {package}"
         output, error = self.execute_command(command)
         return output
 
@@ -17,7 +17,7 @@ class DebianHelper(LinuxHelper):
         return output
 
     def install_timesyncd(self):
-        command =  "systemctl unmask systemd-timesyncd; apt-get remove -y systemd-timesyncd; apt-get install -y systemd-timesyncd; systemctl start systemd-timesyncd;"
+        command =  "systemctl unmask systemd-timesyncd; apt-get remove -y systemd-timesyncd;DEBIAN_FRONTEND=noninteractive apt-get install -y systemd-timesyncd; systemctl start systemd-timesyncd;"
         output, error = self.execute_command(command)
         return output
 
@@ -48,4 +48,11 @@ class DebianHelper(LinuxHelper):
                 res[f"install_pacakge-{package}"] = True
             except Exception as e:
                 res[f"install_pacakge-{package}"] = [False, str(e)]
+
+        try:
+            self.install_timesyncd()
+            res["install_timesyncd"] = True
+        except Exception as e:
+            res["install_timesyncd"] = [False, str(e)]
+
         return res
