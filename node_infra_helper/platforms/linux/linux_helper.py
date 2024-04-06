@@ -6,17 +6,21 @@ class LinuxHelper(RemoteConnectionHelper):
     def __del__(self):
         super().__del__()
 
+    def execute_command(self, command):
+        output, error = self.shell.execute_command(command)
+        if len(error) > 0:
+            msg = f"Command {command} failed with error {error}"
+            self.logger.error(msg)
+            raise Exception(msg)
+        return output, error
+
+
     def find_os_version(self):
         os = ""
         os_version = ""
 
         command = "cat /etc/os-release"
-        output, error = self.shell.execute_command(command)
-
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        output, error = self.execute_command(command)
 
         for l in output:
             if "PRETTY_NAME" in l:
@@ -33,12 +37,7 @@ class LinuxHelper(RemoteConnectionHelper):
         mac_addr = ""
 
         command = "ip -o link show |cut -d ' ' -f 2,20 | grep eth0"
-        output, error = self.shell.execute_command(command)
-
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        output, error = self.execute_command(command)
 
         for l in output:
             if "eth0" in l:
@@ -50,15 +49,11 @@ class LinuxHelper(RemoteConnectionHelper):
         memory = 0
 
         command = "grep MemTotal /proc/meminfo"
-        output, error = self.shell.execute_command(command)
-
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        output, error = self.execute_command(command)
 
         for l in output:
             if "MemTotal" in l:
                 memory = l.split()[1]
                 memory = int(memory)
         return memory
+    
