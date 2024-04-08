@@ -59,4 +59,32 @@ class Linux(LinuxConstants):
         return False
 
     def init_cluster(self, node):
+        from cb_server_rest_util.cluster_nodes.cluster_nodes_api \
+            import ClusterRestAPI
+        rest = ClusterRestAPI(node)
+        for path in set([_f for _f in [node.data_path,
+                                       node.index_path,
+                                       node.cbas_path] if _f]):
+            for cmd in (f"rm -rf {path}/*",
+                        f"chown -R couchbase:couchbase {path}"):
+                self.shell.execute_command(cmd)
+
+        rest.initialize_node(node.rest_username, node.rest_password,
+                             data_path=node.data_path,
+                             index_path=node.index_path,
+                             cbas_path=node.cbas_path)
+        status, content = rest.node_details()
+        if not status:
+            return False
+        status, _ = rest.configure_memory(
+            {"memoryQuota": int(content["mcdMemoryReserved"])})
+        if not status:
+            return False
+        status, _ = rest.setup_services([node.services or "kv"])
+        if not status:
+            return False
+        status, _ = rest.establish_credentials(node.rest_username,
+                                               node.rest_password)
+        if not status:
+            return False
         return True
