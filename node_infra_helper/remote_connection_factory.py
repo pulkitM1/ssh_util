@@ -6,7 +6,7 @@ from node_infra_helper.platforms.linux.linux_helper import LinuxHelper
 from node_infra_helper.platforms.mac.mac_helper import MacHelper
 from node_infra_helper.platforms.linux.debian_based.debian_helper import DebianHelper
 from node_infra_helper.platforms.linux.rpm_based.rpm_helper import RPMHelper
-from node_infra_helper.platforms.linux.rpm_based.suse_linux.suse_helper import SUSEHelper
+from node_infra_helper.platforms.linux.rpm_based.suse_helper import SUSEHelper
 
 class RemoteConnectionObjectFactory:
     @staticmethod

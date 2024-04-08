@@ -7,39 +7,23 @@ class DebianHelper(LinuxHelper):
         super().__del__()
 
     def install_package(self, package):
-        command = f"apt-get install -y {package}"
-        output, error = self.shell.execute_command(command)
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        command = f"DEBIAN_FRONTEND=noninteractive apt-get install -y {package}"
+        output, error = self.execute_command(command)
         return output
 
     def apt_update(self):
         command = "apt-get update"
-        output, error = self.shell.execute_command(command)
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        output, error = self.execute_command(command)
         return output
 
     def install_timesyncd(self):
-        command =  "systemctl unmask systemd-timesyncd; apt-get remove -y systemd-timesyncd; apt-get install -y systemd-timesyncd; systemctl start systemd-timesyncd;"
-        output, error = self.shell.execute_command(command)
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        command =  "systemctl unmask systemd-timesyncd; apt-get remove -y systemd-timesyncd;DEBIAN_FRONTEND=noninteractive apt-get install -y systemd-timesyncd; systemctl start systemd-timesyncd;"
+        output, error = self.execute_command(command)
         return output
 
     def set_journalctl_config(self, vacuum_size="100M", vacuum_time="10d"):
         command =  f"journalctl --vacuum-size={vacuum_size};journalctl --vacuum-time={vacuum_time}"
-        output, error = self.shell.execute_command(command)
-        if len(error) > 0:
-            msg = f"Command {command} failed with error {error}"
-            self.logger.error(msg)
-            raise Exception(msg)
+        output, error = self.execute_command(command)
         return output
 
 
@@ -64,4 +48,11 @@ class DebianHelper(LinuxHelper):
                 res[f"install_pacakge-{package}"] = True
             except Exception as e:
                 res[f"install_pacakge-{package}"] = [False, str(e)]
+
+        try:
+            self.install_timesyncd()
+            res["install_timesyncd"] = True
+        except Exception as e:
+            res["install_timesyncd"] = [False, str(e)]
+
         return res
