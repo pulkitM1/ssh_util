@@ -110,8 +110,7 @@ class InstallHelper(object):
                 known_os.add(node_helper.os_type)
 
         if len(known_os) != 1:
-            self.log.critical("Multiple OS versions found!")
-            result = False
+            self.log.warning("Multiple OS versions found!")
         return result
 
     def populate_cb_server_versions(self):
