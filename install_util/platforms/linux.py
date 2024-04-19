@@ -1,3 +1,5 @@
+from time import sleep
+
 from install_util.constants.linux import LinuxConstants
 from shell_util.remote_connection import RemoteMachineShellConnection
 
@@ -73,11 +75,23 @@ class Linux(LinuxConstants):
                              data_path=node.data_path,
                              index_path=node.index_path,
                              cbas_path=node.cbas_path)
-        status, content = rest.node_details()
-        if not status:
+        max_retry = 10
+        mcd_mem_reservered = 0
+        while max_retry > 0 and mcd_mem_reservered == 0:
+            status, content = rest.node_details()
+            if not status:
+                return False
+            mcd_mem_reservered = int(content["mcdMemoryReserved"])
+            if mcd_mem_reservered != 0:
+                break
+            sleep(2)
+            max_retry -= 1
+        else:
+            self.shell.log.critical("ERROR: mcdMemoryReserved=0")
             return False
+
         status, _ = rest.configure_memory(
-            {"memoryQuota": int(content["mcdMemoryReserved"])})
+            {"memoryQuota": mcd_mem_reservered})
         if not status:
             return False
         status, _ = rest.setup_services([node.services or "kv"])
