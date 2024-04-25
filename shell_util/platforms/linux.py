@@ -20,19 +20,19 @@ class Linux(ShellConnection, LinuxConstants):
 
     def get_cbversion(self):
         output = ""
-        fv = sv = bn = tmp = ""
+        fv = sv = bn = ""
         err_msg = "{} - Couchbase Server not found".format(self.ip)
         if self.nonroot:
             if self.file_exists('/home/%s/cb/%s' % (self.username, self.cb_path), self.version_file):
                 output = self.read_remote_file('/home/%s/cb/%s' % (self.username, self.cb_path),
                                                self.version_file)
             else:
-                log.info(err_msg)
+                self.log.info(err_msg)
         else:
             if self.file_exists(self.cb_path, self.version_file):
                 output = self.read_remote_file(self.cb_path, self.version_file)
             else:
-                log.info(err_msg)
+                self.log.info(err_msg)
         if output:
             for x in output:
                 x = x.strip()
@@ -49,8 +49,8 @@ class Linux(ShellConnection, LinuxConstants):
             if self.file_exists("/home/%s/" % self.username, NR_INSTALL_LOCATION_FILE):
                 output, error = self.execute_command("cat %s" % NR_INSTALL_LOCATION_FILE)
                 if output and output[0]:
-                    log.info("Couchbase Server was installed in non default path %s"
-                             % output[0])
+                    self.log.info("Couchbase Server was installed in non default path %s"
+                                  % output[0])
                     self.nr_home_path = output[0]
             file_path = self.nr_home_path + self.cb_path
             if self.file_exists(file_path, self.version_file):
@@ -175,14 +175,14 @@ class Linux(ShellConnection, LinuxConstants):
         # Changed from kill -9 $(ps aux | grep 'memcached' | awk '{print $2}'
         # as grep was also returning eventing
         # process which was using memcached-cert
-        o, r = self.execute_command("kill -9 $(ps aux | pgrep 'memcached')"
-                                                             , debug=True)
+        o, r = self.execute_command("kill -9 $(ps aux | pgrep 'memcached')",
+                                    debug=True)
         self.log_command_output(o, r, debug=False)
         while num_retries > 0:
             self.sleep(poll_interval, "waiting for memcached to start")
-            out,err=self.execute_command('pgrep memcached')
+            out, err = self.execute_command('pgrep memcached')
             if out and out != "":
-                log.info("memcached pid:{} and err: {}".format(out,err))
+                self.log.info(f"memcached pid:{out} and err: {err}")
                 break
             else:
                 num_retries -= 1
@@ -221,7 +221,7 @@ class Linux(ShellConnection, LinuxConstants):
         self.log_command_output(o, r)
 
     def change_log_level(self, new_log_level):
-        log.info("CHANGE LOG LEVEL TO %s".format(new_log_level))
+        self.log.info("CHANGE LOG LEVEL TO %s".format(new_log_level))
         # ADD NON_ROOT user config_details
         output, error = self.execute_command("sed -i '/loglevel_default, /c \\{loglevel_default, %s\}'. %s"
                                             % (new_log_level, testconstants.LINUX_STATIC_CONFIG))
@@ -262,7 +262,7 @@ class Linux(ShellConnection, LinuxConstants):
         print((" MV LOGS %s" % mv_logs))
         error_log_tag = "error_logger_mf_dir"
         # ADD NON_ROOT user config_details
-        log.info("CHANGE LOG LOCATION TO %s".format(mv_logs))
+        self.log.info("CHANGE LOG LOCATION TO %s".format(mv_logs))
         output, error = self.execute_command("rm -rf %s" % mv_logs)
         self.log_command_output(output, error)
         output, error = self.execute_command("mkdir %s" % mv_logs)
@@ -275,15 +275,15 @@ class Linux(ShellConnection, LinuxConstants):
 
     def change_stat_periodicity(self, ticks):
         # ADD NON_ROOT user config_details
-        log.info("CHANGE STAT PERIODICITY TO every %s seconds" % ticks)
+        self.log.info("CHANGE STAT PERIODICITY TO every %s seconds" % ticks)
         output, error = self.execute_command("sed -i '$ a\{grab_stats_every_n_ticks, %s}.'  %s"
                                              % (ticks, testconstants.LINUX_STATIC_CONFIG))
         self.log_command_output(output, error)
 
     def change_port_static(self, new_port):
         # ADD NON_ROOT user config_details
-        log.info("=========CHANGE PORTS for REST: %s, MCCOUCH: %s,MEMCACHED: %s, CAPI: %s==============="
-                 % (new_port, new_port + 1, new_port + 2, new_port + 4))
+        self.log.info("=========CHANGE PORTS for REST: %s, MCCOUCH: %s,MEMCACHED: %s, CAPI: %s==============="
+                      % (new_port, new_port + 1, new_port + 2, new_port + 4))
         output, error = self.execute_command("sed -i '/{rest_port/d' %s" % testconstants.LINUX_STATIC_CONFIG)
         self.log_command_output(output, error)
         output, error = self.execute_command("sed -i '$ a\{rest_port, %s}.' %s"
@@ -311,8 +311,8 @@ class Linux(ShellConnection, LinuxConstants):
         command_1 = "/sbin/iptables -F"
         command_2 = "/sbin/iptables -t nat -F"
         if self.nonroot:
-            log.info("Non root user has no right to disable firewall, "
-                     "switching over to root")
+            self.log.info("Non root user has no right to disable firewall, "
+                          "switching over to root")
             self.connect_with_user(user="root")
             output, error = self.execute_command(command_1)
             self.log_command_output(output, error)
@@ -340,20 +340,20 @@ class Linux(ShellConnection, LinuxConstants):
         running = self.is_couchbase_running()
         retry = 0
         while not running and retry < 3:
-            log.info("Starting couchbase server")
+            self.log.info("Starting couchbase server")
             if self.nonroot:
-                log.info("Start Couchbase Server with non root method")
+                self.log.info("Start Couchbase Server with non root method")
                 o, r = self.execute_command(
                     '%s%scouchbase-server \-- -noinput -detached'
                     % (self.nr_home_path, LINUX_COUCHBASE_BIN_PATH))
                 self.log_command_output(o, r)
             else:
-                log.info("Running systemd command on this server")
+                self.log.info("Running systemd command on this server")
                 o, r = self.execute_command("systemctl start couchbase-server.service")
                 self.log_command_output(o, r)
                 self.sleep(5,"waiting for couchbase server to come up")
                 o, r = self.execute_command("systemctl status couchbase-server.service | grep ExecStop=/opt/couchbase/bin/couchbase-server")
-                log.info("Couchbase server status: {}".format(o))
+                self.log.info("Couchbase server status: {}".format(o))
             running = self.is_couchbase_running()
             retry = retry + 1
         if not running and retry >= 3:
@@ -361,7 +361,7 @@ class Linux(ShellConnection, LinuxConstants):
 
     def stop_couchbase(self, num_retries=5, poll_interval=10):
         if self.nonroot:
-            log.info("Stop Couchbase Server with non root method")
+            self.log.info("Stop Couchbase Server with non root method")
             o, r = self.execute_command(
                 '%s%scouchbase-server -k' % (self.nr_home_path,
                                              LINUX_COUCHBASE_BIN_PATH))
@@ -385,7 +385,7 @@ class Linux(ShellConnection, LinuxConstants):
         shell.send('export {0}={1}\n'.format(name, value))
         if self.info.distribution_version.lower() in SYSTEMD_SERVER:
             """from watson, systemd is used in centos 7 """
-            log.info("this node is centos 7.x")
+            self.log.info("this node is centos 7.x")
             shell.send("systemctl restart couchbase-server.service\n")
         else:
             shell.send('/etc/init.d/couchbase-server restart\n')
