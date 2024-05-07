@@ -56,3 +56,7 @@ class DebianHelper(LinuxHelper):
             res["install_timesyncd"] = [False, str(e)]
 
         return res
+    
+    def initialize_slave(self):
+        res = {}
+        return res
