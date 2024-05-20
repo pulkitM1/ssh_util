@@ -18,6 +18,11 @@ class Windows(ShellConnection, WindowsConstants):
             return None
         return '%s.%s' % (self.info.hostname[0], self.info.domain)
 
+    def kill_process(self, process_name, service_name, signum=9):
+        o, r = self.execute_command("taskkill /F /T /IM %s*" % process_name)
+        self.log_command_output(o, r)
+        return o, r
+
     def cpu_stress(self, stop_time):
         """Override method"""
         raise NotImplementedError

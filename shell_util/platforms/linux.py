@@ -9,6 +9,17 @@ class Linux(ShellConnection, LinuxConstants):
         self.use_sudo = False
         self.info = info
 
+    def kill_process(self, process_name, service_name, signum=9):
+        self.log.debug("{0} - Process info before sending signal: {1}"
+                       .format(self.ip,
+                               self.execute_command("pgrep -l %s" % process_name)))
+        o, r = self.execute_command("kill -%s $(pgrep %s)" % (signum, service_name))
+        self.log_command_output(o, r)
+        self.log.debug("{0} - Process info after sending signal: {1}"
+                       .format(self.ip,
+                               self.execute_command("pgrep -l %s" % process_name)))
+        return o, r
+
     def get_mem_usage_by_process(self, process_name):
         output, error = self.execute_command(
             'ps -e -o %mem,cmd|grep {0}'.format(process_name),
