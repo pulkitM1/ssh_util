@@ -65,12 +65,12 @@ class Linux(ShellConnection, LinuxConstants):
                     self.nr_home_path = output[0]
             file_path = self.nr_home_path + self.cb_path
             if self.file_exists(file_path, self.version_file):
-                log.info("non root couchbase installed at %s " % self.ip)
+                self.log.info("non root couchbase installed at %s " % self.ip)
                 return True
         else:
             if self.file_exists(self.cb_path, self.version_file):
-                log.info("{0} **** The linux version file {1} {2}  exists"
-                         .format(self.ip, self.cb_path, self.version_file))
+                self.log.info("{0} **** The linux version file {1} {2}  exists"
+                              .format(self.ip, self.cb_path, self.version_file))
                 return True
         return False
 
