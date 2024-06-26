@@ -103,42 +103,52 @@ class Linux(ShellConnection, LinuxConstants):
     def restart_couchbase(self):
         o, r = self.execute_command("service couchbase-server restart")
         self.log_command_output(o, r)
+        return o, r
 
     def enable_packet_loss(self):
         o, r = self.execute_command("tc qdisc add dev eth0 root netem loss 25%")
         self.log_command_output(o, r)
+        return o, r
 
     def enable_network_delay(self):
         o, r = self.execute_command("tc qdisc add dev eth0 root netem delay 200ms")
         self.log_command_output(o, r)
+        return o, r
 
     def enable_file_limit(self):
         o, r = self.execute_command("prlimit --nofile=100 --pid $(pgrep indexer)")
         self.log_command_output(o, r)
+        return o, r
 
     def enable_file_size_limit(self):
         o, r = self.execute_command("prlimit --fsize=20480 --pid $(pgrep indexer)")
         self.log_command_output(o, r)
+        return o, r
 
     def disable_file_size_limit(self):
         o, r = self.execute_command("prlimit --fsize=unlimited --pid $(pgrep indexer)")
         self.log_command_output(o, r)
+        return o, r
 
     def enable_file_limit_desc(self):
         o, r = self.execute_command("sysctl -w fs.file-max=100;sysctl -p")
         self.log_command_output(o, r)
+        return o, r
 
     def disable_file_limit(self):
         o, r = self.execute_command("prlimit --nofile=200000 --pid $(pgrep indexer)")
         self.log_command_output(o, r)
+        return o, r
 
     def disable_file_limit_desc(self):
         o, r = self.execute_command("sysctl -w fs.file-max=1606494;sysctl -p")
         self.log_command_output(o, r)
+        return o, r
 
     def delete_network_rule(self):
         o, r = self.execute_command("tc qdisc del dev eth0 root")
         self.log_command_output(o, r)
+        return o, r
 
     def get_memcache_pid(self):
         o, _ = self.execute_command(
@@ -202,26 +212,32 @@ class Linux(ShellConnection, LinuxConstants):
     def start_memcached(self):
         o, r = self.execute_command("kill -SIGCONT $(pgrep memcached)")
         self.log_command_output(o, r, debug=False)
+        return o, r
 
     def stop_memcached(self):
         o, r = self.execute_command("kill -SIGSTOP $(pgrep memcached)")
         self.log_command_output(o, r, debug=False)
+        return o, r
 
     def start_indexer(self):
         o, r = self.execute_command("kill -SIGCONT $(pgrep indexer)")
         self.log_command_output(o, r)
+        return o, r
 
     def stop_indexer(self):
         o, r = self.execute_command("kill -SIGSTOP $(pgrep indexer)")
         self.log_command_output(o, r, debug=False)
+        return o, r
 
     def kill_goxdcr(self):
         o, r = self.execute_command("killall -9 goxdcr")
         self.log_command_output(o, r)
+        return o, r
 
     def kill_eventing_process(self, name):
         o, r = self.execute_command(command="killall -9 {0}".format(name))
         self.log_command_output(o, r)
+        return o, r
 
     def terminate_processes(self, info, p_list):
         for process in p_list:
@@ -230,6 +246,7 @@ class Linux(ShellConnection, LinuxConstants):
     def reboot_node(self):
         o, r = self.execute_command("reboot")
         self.log_command_output(o, r)
+        return o, r
 
     def change_log_level(self, new_log_level):
         self.log.info("CHANGE LOG LEVEL TO %s".format(new_log_level))
