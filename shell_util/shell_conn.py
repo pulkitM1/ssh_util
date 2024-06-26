@@ -565,12 +565,12 @@ class ShellConnection(CommonShellAPIs):
                 rss.append(process.rss)
             else:
                 log.info("{0}:process {1} is not running.  Wait for 2 seconds"
-                         .format(self.remote_shell.ip, process_name))
+                         .format(self.ip, process_name))
                 count += 1
                 self.sleep(2)
                 if count == 5:
                     log.error("{0}:process {1} is not running at all."
-                              .format(self.remote_shell.ip, process_name))
+                              .format(self.ip, process_name))
                     exit(1)
             log.info("sleep for 7 seconds before poll new processes")
             self.sleep(7)
@@ -578,7 +578,7 @@ class ShellConnection(CommonShellAPIs):
 
     def is_process_running(self, process_name):
         log.info("%s - Checking for process %s" % (self.ip, process_name))
-        for process in self.remote_shell.get_running_processes():
+        for process in self.get_running_processes():
             if process.name == process_name:
                 log.info("%s - Process %s is running with pid %s"
                          % (self.ip, process_name, process.pid))
