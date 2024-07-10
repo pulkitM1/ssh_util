@@ -125,8 +125,8 @@ class ShellConnection(CommonShellAPIs):
         is_ssh_ok = False
         while not is_ssh_ok and attempt < max_attempts_connect:
             attempt += 1
-            log.info("SSH Connecting to {} with username:{}, attempt#{} of {}"
-                     .format(ip, ssh_username, attempt, max_attempts_connect))
+            log.debug("SSH Connecting to {} with username:{}, attempt#{} of {}"
+                      .format(ip, ssh_username, attempt, max_attempts_connect))
             try:
                 if self.remote and ssh_key == '':
                     self._ssh_client.connect(
@@ -161,8 +161,6 @@ class ShellConnection(CommonShellAPIs):
             else:
                 log.error("No exit on failure, raise exception")
                 raise Exception(error_msg)
-        else:
-            log.info("SSH Connected to {} as {}".format(ip, ssh_username))
 
     def reconnect_if_inactive(self):
         """
