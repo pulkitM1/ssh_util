@@ -271,6 +271,7 @@ class ShellConnection(CommonShellAPIs):
         return info
 
     def extract_remote_info(self):
+        print("extracting remote info!!!!!")
         # initialize params
         os_distro = "linux"
         os_version = "default"
@@ -279,6 +280,7 @@ class ShellConnection(CommonShellAPIs):
         is_mac = False
         self.reconnect_if_inactive()
         mac_check_cmd = "sw_vers | grep ProductVersion | awk '{ print $2 }'"
+        print(self.remote)
         if self.remote:
             stdin, stdout, stderro = self._ssh_client.exec_command(mac_check_cmd)
             stdin.close()
@@ -304,6 +306,8 @@ class ShellConnection(CommonShellAPIs):
             os_distro = ''
             os_version = ''
             is_linux_distro = False
+            print("filenames!!!")
+            print(filenames)
             for name in filenames:
                 if name == 'os-release':
                     # /etc/os-release - likely standard across linux distros
